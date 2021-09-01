@@ -1,0 +1,10 @@
+bin
+obj
+.DS_Store
+*.db
+launch.json
+tasks.json
+publish
+node_modules
+yarn.lock
+wwwroot
