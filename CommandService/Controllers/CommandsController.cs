@@ -40,9 +40,8 @@ namespace CommandService.Controllers
             {
                 return NotFound();
             }
-
             var command = _repo.GetCommand(platformId, commandId);
-            if (commandId == null) return NotFound();
+            // if (commandId == null) return NotFound();
             return Ok(_mapper.Map<CommandReadDto>(command));
         }
 

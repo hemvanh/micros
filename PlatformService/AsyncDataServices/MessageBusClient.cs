@@ -48,6 +48,7 @@ namespace PlatformService.AsyncDataServices
                 Console.WriteLine("--> RabbitMQ Connection Opened, sending message ...");
 
                 //! ToDo: Send Message here
+                SendMessage(message);
             }
             else
             {

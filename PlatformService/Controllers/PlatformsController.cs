@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using PlatformService.AsyncDataServices;
 using PlatformService.Data;
 using PlatformService.Dtos;
 using PlatformService.Models;
@@ -17,9 +18,16 @@ namespace PlatformService.Controllers
         private readonly IPlatformRepo _repo;
         private readonly IMapper _mapper;
         private readonly ICommandDataClient _commandDataClient;
-        public PlatformsController(IPlatformRepo repo, IMapper mapper, ICommandDataClient commandDataClient)
+        private readonly IMessageBusClient _messageBusClient;
+
+        public PlatformsController(
+            IPlatformRepo repo,
+            IMapper mapper,
+            ICommandDataClient commandDataClient,
+            IMessageBusClient messageBusClient)
         {
             _commandDataClient = commandDataClient;
+            _messageBusClient = messageBusClient;
             _mapper = mapper;
             _repo = repo;
         }
@@ -51,13 +59,26 @@ namespace PlatformService.Controllers
 
             var platformReadDto = _mapper.Map<PlatformReadDto>(platformModel);
 
+            //! --> directly call Command Service using HTTP client
             try
             {
                 await _commandDataClient.SendPlatformToCommand(platformReadDto);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"--> Could not send synchronously to Command Service: {ex.Message}");
+                Console.WriteLine($"--> Http Client: Could not send synchronously to Command Service: {ex.Message}");
+            }
+
+            //! --> send async message to Message Bus so that Command Service could catch the message later
+            try
+            {
+                var platformPublishedDto = _mapper.Map<PlatformPublishedDto>(platformReadDto);
+                platformPublishedDto.Event = "Platform_Created_Event";
+                _messageBusClient.PublishNewPlatform(platformPublishedDto);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"--> RabbitMQ Message Client: Could not send message Asynchronously to Command Service: {ex.Message}");
             }
 
             return Ok(platformReadDto);
